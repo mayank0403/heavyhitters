@@ -390,11 +390,23 @@ async fn main() -> io::Result<()> {
         }
     }
 
+    let n = cfg.data_len-1;
+    let small_f = 62;
+    let m = small_f;
+    let big_f = 255;
+    let lambda = 128;
+    let key_size = n*(lambda + m + 2) + 4*lambda - m;
+    let sketch_comm = n*6*small_f + 6*big_f; // amortized across two servers because PRG is used
+    let client_comm = 2*key_size + sketch_comm;
+    println!("Client communication bytes (per client egress): {:?}", client_comm/8);
+
     tree_init(&mut client0, &mut client1).await?;
 
     let start = Instant::now();
+    let mut total_inner_active_paths = 0;
     for level in 0..cfg.data_len-1 {
         let active_paths = run_level(&cfg, &mut client0, &mut client1, level, nreqs, start).await?;
+        total_active_paths += active_paths;
 
         println!(
             "Level {:?} active_paths={:?} {:?}",
@@ -403,6 +415,7 @@ async fn main() -> io::Result<()> {
             start.elapsed().as_secs_f64()
         );
     }
+    let mut server_comm = total_active_paths*small_f + n*4*small_f*cfg.keys0.len();
 
     let active_paths = run_level_last(&cfg, &mut client0, &mut client1, nreqs, start).await?;
     println!(
@@ -411,6 +424,8 @@ async fn main() -> io::Result<()> {
         active_paths,
         start.elapsed().as_secs_f64()
     );
+    server_comm += active_paths*big_f + 4*big_f*cfg.keys0.len();
+    println!("Server communication bytes (per server egress): {:?}", server_comm/8);
 
     final_shares(&mut client0, &mut client1).await?;
 
