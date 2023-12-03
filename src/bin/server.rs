@@ -67,7 +67,7 @@ impl Collector for CollectorServer {
         future::ready("Done".to_string())
     }
 
-    fn add_keys(self, _: context::Context, add: AddKeysRequest) -> Self::AddKeysFut {
+    fn add_keys(self,  _: context::Context, add: AddKeysRequest) -> Self::AddKeysFut {
         let mut coll = self.arc.lock().unwrap();
         for k in add.keys {
             coll.add_key(k);

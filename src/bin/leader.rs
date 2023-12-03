@@ -406,7 +406,7 @@ async fn main() -> io::Result<()> {
     let mut total_inner_active_paths = 0;
     for level in 0..cfg.data_len-1 {
         let active_paths = run_level(&cfg, &mut client0, &mut client1, level, nreqs, start).await?;
-        total_active_paths += active_paths;
+        total_inner_active_paths += active_paths;
 
         println!(
             "Level {:?} active_paths={:?} {:?}",
@@ -415,7 +415,7 @@ async fn main() -> io::Result<()> {
             start.elapsed().as_secs_f64()
         );
     }
-    let mut server_comm = total_active_paths*small_f + n*4*small_f*cfg.keys0.len();
+    let mut server_comm = total_inner_active_paths*small_f + n*4*small_f*nreqs;
 
     let active_paths = run_level_last(&cfg, &mut client0, &mut client1, nreqs, start).await?;
     println!(
@@ -424,7 +424,7 @@ async fn main() -> io::Result<()> {
         active_paths,
         start.elapsed().as_secs_f64()
     );
-    server_comm += active_paths*big_f + 4*big_f*cfg.keys0.len();
+    server_comm += active_paths*big_f + 4*big_f*nreqs;
     println!("Server communication bytes (per server egress): {:?}", server_comm/8);
 
     final_shares(&mut client0, &mut client1).await?;
